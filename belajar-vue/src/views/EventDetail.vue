@@ -4,59 +4,54 @@
 
     <div class="detail-header">
       <div class="header-content">
-        <span class="event-tag">Community Event</span>
-        <h1>Community Gathering {{ $route.params.id }}</h1>
+        <span class="event-tag">Workshop &amp; Training</span>
+        <h1>Vue.js Mastery Workshop {{ $route.params.id }}</h1>
         <div class="meta-info">
-          <div class="meta-item">
-            <span class="icon">📅</span>
-            <span>October 15, 2026</span>
-          </div>
-          <div class="meta-item">
-            <span class="icon">📍</span>
-            <span>Main Auditorium, City Center</span>
-          </div>
-          <div class="meta-item">
-            <span class="icon">👥</span>
-            <span>500+ Attendees</span>
-          </div>
+          <span class="meta-item">📅 October 12, 2026</span>
+          <span class="meta-item">📍 Tech Hub, Jakarta Pusat</span>
+          <span class="meta-item">👥 Quota: 150 Attendees</span>
         </div>
       </div>
     </div>
 
-    <div class="detail-content">
+    <!-- ASYMMETRICAL LAYOUT -->
+    <div class="detail-content grid-asymmetric">
+      <!-- F-PATTERN: Breaking text with Headings & Bullet Points -->
       <div class="main-desc">
         <h2>About This Event</h2>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam finibus sed nisl. Vivamus
-          hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend
-          nibh porttitor. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis
-          nisl tempor.
+          Welcome to the biggest web interface development training event of the year! Gatherly is
+          collaborating with the local developer community to host a comprehensive workshop
+          designed specifically to bring together professionals, enthusiasts, and students.
         </p>
         <p>
-          Suspendisse dictum feugiat nisl ut dapibus. Mauris iaculis porttitor posuere. Praesent id
-          metus massa, ut blandit odio. Proin quis tortor orci. Etiam at risus et justo dignissim
-          congue. Donec congue lacinia dui, a porttitor lectus condimentum laoreet. Nunc eu
-          ullamcorper orci.
+          In this session, we will discuss various current industry challenges, dissect the
+          implementation of Single Page Applications (SPA), and practice hands-on Layout System
+          design prioritizing visual hierarchy. You will gain practical insights that can be
+          directly applied to your future projects or career.
         </p>
 
         <div class="agenda">
-          <h3>Agenda</h3>
+          <h2>Event Agenda</h2>
           <ul class="agenda-list">
-            <li><strong>09:00 AM</strong> - Registration &amp; Welcome Coffee</li>
-            <li><strong>10:00 AM</strong> - Opening Keynote Speech</li>
-            <li><strong>11:30 AM</strong> - Networking Session</li>
-            <li><strong>01:00 PM</strong> - Closing Remarks</li>
+            <li><strong>09:00 AM</strong> - Registration &amp; QR Check-in Scanning</li>
+            <li><strong>10:00 AM</strong> - Session 1: Vue Router &amp; Navigation Fundamentals</li>
+            <li><strong>11:30 AM</strong> - Coffee Break &amp; Networking Session</li>
+            <li><strong>01:00 PM</strong> - Session 2: Layout System &amp; Grid Implementation</li>
+            <li><strong>03:00 PM</strong> - Q&amp;A Closing Remarks</li>
           </ul>
         </div>
       </div>
 
+      <!-- FOCAL POINT & STICKY PANE -->
       <div class="sidebar">
-        <div class="ticket-card">
-          <h3>Registrations</h3>
+        <div class="ticket-card sticky-pane">
+          <h3>Attendee Registration</h3>
           <p class="price">Free</p>
-          <p class="status">Don't miss this! Secure your spot today before it runs out.</p>
+          <p class="ticket-desc">Secure your seat now before the quota is full.</p>
+          <!-- STRONGEST FOCAL POINT -->
           <button class="btn-register">Register Now</button>
-          <p class="spots">Only 45 spots left!</p>
+          <p class="spots">Only 12 seats left!</p>
         </div>
       </div>
     </div>
@@ -67,25 +62,25 @@
 .btn-back {
   background: none;
   border: none;
-  color: #666;
+  color: var(--text-muted);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-6);
   transition: color 0.2s;
   padding: 0;
 }
 
 .btn-back:hover {
-  color: #6644ff;
+  color: var(--primary);
 }
 
 .detail-header {
-  background: #f8f9fa;
-  border-radius: 20px;
-  padding: 2rem;
-  border: 1px solid #eee;
-  margin-bottom: 3rem;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--space-4);
+  padding: var(--space-8);
+  margin-bottom: var(--space-8);
 }
 
 .header-content {
@@ -95,48 +90,55 @@
 .event-tag {
   display: inline-block;
   background: rgba(102, 68, 255, 0.1);
-  color: #6644ff;
-  padding: 0.4rem 1rem;
-  border-radius: 50px;
+  color: var(--primary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--space-2);
   font-weight: 600;
   font-size: 0.85rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-4);
 }
 
 .header-content h1 {
-  color: #1c1948;
-  font-size: 2.8rem;
-  margin-bottom: 2rem;
+  color: var(--text-main);
+  font-size: 2.5rem;
+  margin-bottom: var(--space-4);
   line-height: 1.2;
 }
 
 .meta-info {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
+  gap: var(--space-6);
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  color: #555;
+  gap: var(--space-2);
+  color: var(--text-muted);
   font-weight: 500;
-  font-size: 1.05rem;
 }
 
 .detail-content {
-  display: flex;
-  gap: 4rem;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-12);
+}
+
+.grid-asymmetric {
+  /* Rasio lebar 2:1, setara 8:4 pada grid 12 kolom */
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-12);
 }
 
 .main-desc {
-  flex: 2;
+  min-width: 0;
 }
 
 .main-desc h2 {
-  color: #1c1948;
-  margin-bottom: 1.5rem;
+  color: var(--text-main);
+  margin-bottom: var(--space-4);
   font-size: 1.8rem;
   display: flex;
   align-items: center;
@@ -148,14 +150,14 @@
   display: block;
   width: 4px;
   height: 30px;
-  background: #6644ff;
+  background: var(--primary);
   border-radius: 2px;
 }
 
 .main-desc p {
-  color: #555;
+  color: var(--text-muted);
   line-height: 1.8;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-4);
   font-size: 1.05rem;
 }
 
@@ -166,29 +168,32 @@
 }
 
 .agenda-list li {
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-  color: #444;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
   font-size: 1.05rem;
 }
 
 .sidebar {
-  flex: 1;
+  min-width: 0;
 }
 
-.ticket-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  text-align: center;
+.sticky-pane {
   position: sticky;
   top: 100px;
 }
 
+.ticket-card {
+  background: var(--bg-light);
+  padding: var(--space-6);
+  border-radius: var(--space-4);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  text-align: center;
+}
+
 .ticket-card h3 {
-  color: #1c1948;
+  color: var(--text-main);
   font-size: 1.5rem;
   margin-bottom: 1rem;
 }
@@ -196,34 +201,34 @@
 .price {
   font-size: 2.8rem;
   font-weight: 800;
-  color: #6644ff;
+  color: var(--primary);
   margin-bottom: 0.5rem;
 }
 
-.status {
-  color: #666;
-  margin-bottom: 2rem;
+.ticket-desc {
+  color: var(--text-muted);
+  margin-bottom: var(--space-8);
 }
 
 .btn-register {
   width: 100%;
-  padding: 1.2rem;
-  background: #1c1948;
+  padding: var(--space-4);
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background-color 0.3s;
 }
 
 .btn-register:hover {
-  background: #6644ff;
+  background: var(--primary-hover);
 }
 
 .spots {
-  margin-top: 1.5rem;
+  margin-top: var(--space-4);
   color: #e63946;
   font-weight: 600;
   font-size: 0.95rem;
@@ -231,7 +236,17 @@
 
 @media (max-width: 900px) {
   .detail-content {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .grid-asymmetric {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .sticky-pane {
+    position: static;
   }
 
   .header-content h1 {
