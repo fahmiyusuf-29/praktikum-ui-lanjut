@@ -1,27 +1,45 @@
+<script setup>
+const events = Array.from({ length: 6 }, (_, index) => {
+  const id = index + 1
+
+  return {
+    id,
+    title: `Community Gathering ${id}`,
+    date: `Oct ${10 + id}, 2026`,
+    category: 'Community',
+    location: 'Main Auditorium, City Center',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam at velit vel magna interdum scelerisque.',
+  }
+})
+</script>
+
 <template>
   <div class="event-list-page">
     <div class="header-section">
       <h2 class="section-title">Upcoming Events</h2>
-      <p class="section-desc">Discover the latest gatherings and activities happening near you.</p>
+      <p class="section-desc">
+        Discover workshops, seminars, tech meetups, and competitions near you.
+      </p>
     </div>
 
+    <!-- LAYOUT SYSTEM: ADAPTIVE GRID -->
     <div class="event-grid">
-      <div class="event-card" v-for="i in 6" :key="i">
+      <!-- VISUAL HIERARCHY: GROUPING & COMMON REGIONS -->
+      <div class="event-card" v-for="event in events" :key="event.id">
         <div class="event-body">
           <div class="event-meta">
-            <span class="event-date">Oct {{ 10 + i }}, 2026</span>
-            <span class="event-category">Community</span>
+            <!-- LABEL CONTRAST: Recognition over Recall -->
+            <span class="event-date">{{ event.date }}</span>
+            <span class="event-category">{{ event.category }}</span>
           </div>
-          <h3>Community Gathering {{ i }}</h3>
-          <p class="event-loc">📍 Main Auditorium, City Center</p>
-          <p class="event-desc">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam at velit vel magna
-            interdum scelerisque.
-          </p>
+          <h3 class="event-title">{{ event.title }}</h3>
+          <p class="event-loc">📍 {{ event.location }}</p>
+          <p class="event-desc">{{ event.description }}</p>
           <div class="card-footer">
-            <router-link :to="`/browse/events/${i}`" class="btn-link"
-              >View Details &rarr;</router-link
-            >
+            <router-link :to="`/browse/events/${event.id}`" class="btn-link">
+              View Event Details &rarr;
+            </router-link>
           </div>
         </div>
       </div>
@@ -46,16 +64,18 @@
 }
 
 .event-grid {
+  /* ADAPTIVE GRID: Responsive otomatis menyesuaikan lebar layar */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 2rem;
+  gap: var(--space-6);
 }
 
 .event-card {
+  /* BOUNDARIES: Menciptakan "Common Regions" */
   background: white;
-  border-radius: 16px;
+  border-radius: var(--space-4);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
   transition:
     all 0.3s ease,
     border-color 0.3s ease;

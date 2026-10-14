@@ -1,60 +1,43 @@
 <template>
   <div class="home-page">
-    <section class="hero">
+    <section class="hero-section">
       <div class="hero-content">
-        <span class="badge">Welcome to Gatherly</span>
         <h1 class="hero-title">Connect, Discover, and Experience</h1>
         <p class="hero-subtitle">
-          Join our vibrant community to explore the best events tailored for you. Lorem ipsum dolor
-          sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et
-          dolore magna aliqua.
+          A confident event platform designed to bring ideas together. Discover hundreds of events
+          near you.
         </p>
         <div class="hero-actions">
           <router-link to="/browse/events" class="btn btn-primary">Discover Events</router-link>
-          <router-link to="/about" class="btn btn-secondary">Learn More</router-link>
         </div>
       </div>
     </section>
 
-    <section class="features">
-      <div class="feature-card" v-for="i in 3" :key="i">
-        <div class="feature-icon">{{ ['?', '??', '??'][i - 1] }}</div>
-        <h3 class="feature-title">
-          {{ ['Curated Events', 'Global Reach', 'Community Driven'][i - 1] }}
-        </h3>
-        <p>
-          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-          commodo consequat.
-        </p>
+    <section class="features-section">
+      <div class="features-header">
+        <h2>Why Choose Gatherly?</h2>
+        <p>Everything you need to host or attend unforgettable events.</p>
       </div>
-    </section>
 
-    <section class="sitemap-visual">
-      <h2>Website Structure / Site-Map</h2>
-      <p class="sitemap-desc">
-        A quick overview of how this application is structured via Vue Router.
-      </p>
-      <ul class="tree">
-        <li>
-          <router-link to="/">Home</router-link>
-          <ul>
-            <li><router-link to="/about">About</router-link></li>
-            <li>
-              <router-link to="/browse">Browse</router-link>
-              <ul>
-                <li>
-                  <router-link to="/browse/events">Event List</router-link>
-                  <ul>
-                    <li><router-link to="/browse/events/1">Event Detail (Example)</router-link></li>
-                  </ul>
-                </li>
-                <li><router-link to="/browse/category">Category</router-link></li>
-              </ul>
-            </li>
-            <li><router-link to="/contact">Contact</router-link></li>
-          </ul>
-        </li>
-      </ul>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>Discover Easily</h3>
+          <p>Find events tailored to your interests using our smart category and location filters.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎟️</div>
+          <h3>Seamless Ticketing</h3>
+          <p>Register with one click and get your digital QR ticket instantly on your device.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Host Like a Pro</h3>
+          <p>Manage attendees, track revenue, and scan QR codes with our comprehensive dashboard.</p>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -70,11 +53,12 @@
   animation: fadeIn 0.5s ease;
 }
 
-.hero {
+.hero-section {
   display: flex;
+  align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: 5rem 2rem;
+  min-height: 80vh;
+  padding: var(--space-12) var(--space-8);
   background: #f8f9fa;
   border-radius: 24px;
   border: 1px solid #eee;
@@ -82,10 +66,15 @@
 }
 
 .hero-content {
-  max-width: 800px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+  grid-template-areas:
+    'title title'
+    'subtitle actions';
+  align-items: end;
+  gap: var(--space-8);
 }
 
 .badge {
@@ -101,25 +90,29 @@
 }
 
 .hero-title {
-  font-size: 3.5rem;
+  grid-area: title;
+  font-size: 4rem;
   font-weight: 800;
   line-height: 1.1;
   color: #1c1948;
-  margin-bottom: 1.5rem;
-  max-width: 800px;
+  margin: 0;
+  max-width: 14ch;
 }
 
 .hero-subtitle {
+  grid-area: subtitle;
   font-size: 1.15rem;
   color: #666;
   line-height: 1.7;
-  margin-bottom: 2.5rem;
+  margin: 0;
   max-width: 600px;
 }
 
 .hero-actions {
+  grid-area: actions;
   display: flex;
   gap: 1rem;
+  justify-self: end;
 }
 
 .btn {
@@ -153,10 +146,20 @@
   transform: translateY(-2px);
 }
 
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+.features-section {
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
+}
+
+.features-header {
+  text-align: center;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-8);
 }
 
 .feature-card {
@@ -257,13 +260,23 @@
 }
 
 @media (max-width: 768px) {
+  .hero-section {
+    min-height: 80svh;
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .hero-title {
     font-size: 2.5rem;
   }
 
   .hero-actions {
-    flex-direction: column;
-    width: 100%;
+    justify-self: auto;
   }
 }
 
