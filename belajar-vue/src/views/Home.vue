@@ -1,3 +1,8 @@
+<script setup>
+import AppButton from '@/components/UI/AppButton.vue'
+import AppCard from '@/components/UI/AppCard.vue'
+</script>
+
 <template>
   <div class="home-page">
     <section class="hero-section">
@@ -7,9 +12,7 @@
           A confident event platform designed to bring ideas together. Discover hundreds of events
           near you.
         </p>
-        <div class="hero-actions">
-          <router-link to="/browse/events" class="btn btn-primary">Discover Events</router-link>
-        </div>
+        <AppButton to="/browse/events" variant="primary">Discover Events</AppButton>
       </div>
     </section>
 
@@ -20,23 +23,27 @@
       </div>
 
       <div class="features-grid">
-        <div class="feature-card">
+        <AppCard class="feature-card">
           <div class="feature-icon">🔍</div>
           <h3>Discover Easily</h3>
-          <p>Find events tailored to your interests using our smart category and location filters.</p>
-        </div>
+          <p>
+            Find events tailored to your interests using our smart category and location filters.
+          </p>
+        </AppCard>
 
-        <div class="feature-card">
+        <AppCard class="feature-card">
           <div class="feature-icon">🎟️</div>
           <h3>Seamless Ticketing</h3>
           <p>Register with one click and get your digital QR ticket instantly on your device.</p>
-        </div>
+        </AppCard>
 
-        <div class="feature-card">
+        <AppCard class="feature-card">
           <div class="feature-icon">📊</div>
           <h3>Host Like a Pro</h3>
-          <p>Manage attendees, track revenue, and scan QR codes with our comprehensive dashboard.</p>
-        </div>
+          <p>
+            Manage attendees, track revenue, and scan QR codes with our comprehensive dashboard.
+          </p>
+        </AppCard>
       </div>
     </section>
   </div>
@@ -78,25 +85,6 @@
   max-width: 600px;
 }
 
-.btn-primary {
-  background-color: var(--primary);
-  color: white;
-  font-size: 1.1rem;
-  font-weight: 700;
-  text-decoration: none;
-  padding: var(--space-3) var(--space-8);
-  border-radius: 12px;
-  transition:
-    transform 0.2s,
-    background-color 0.2s;
-  box-shadow: 0 4px 15px rgba(102, 68, 255, 0.3);
-}
-
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-2px);
-}
-
 .features-section {
   padding: 0 0 var(--space-12) 0;
 }
@@ -124,19 +112,8 @@
 }
 
 .feature-card {
-  background: var(--bg-light);
   padding: var(--space-8);
-  border-radius: var(--space-4);
-  border: 1px solid var(--border-color);
   text-align: center;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
-.feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
 }
 
 .feature-icon {

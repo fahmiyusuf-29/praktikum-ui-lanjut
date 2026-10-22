@@ -1,17 +1,38 @@
 <script setup>
-const events = Array.from({ length: 6 }, (_, index) => {
-  const id = index + 1
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useEvent } from '@/Composable/UseEvent'
+import EventCard from '@/components/Event/EventCard.vue'
+import SearchBox from '@/components/Event/SearchBox.vue'
+import CategoryFilter from '@/components/Event/CategoryFilter.vue'
+import AppButton from '@/components/UI/AppButton.vue'
 
-  return {
-    id,
-    title: `Community Gathering ${id}`,
-    date: `Oct ${10 + id}, 2026`,
-    category: 'Community',
-    location: 'Main Auditorium, City Center',
-    desc:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam at velit vel magna interdum scelerisque.',
-  }
+const router = useRouter()
+const { events } = useEvent()
+
+const searchQuery = ref('')
+const selectedCategory = ref('All')
+const categories = ['All', 'Technology', 'Music', 'Workshop', 'Competition', 'Seminar', 'Conference']
+
+const activeEvents = computed(() => events.value.filter((event) => event.status === 'active'))
+
+const filteredEvents = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+
+  return activeEvents.value.filter((event) => {
+    const matchesSearch =
+      (event.title || '').toLowerCase().includes(query) ||
+      (event.description || '').toLowerCase().includes(query)
+    const matchesCategory =
+      selectedCategory.value === 'All' || event.category === selectedCategory.value
+
+    return matchesSearch && matchesCategory
+  })
 })
+
+const handleViewDetail = (eventId) => {
+  router.push(`/browse/events/${eventId}`)
+}
 </script>
 
 <template>
@@ -23,33 +44,45 @@ const events = Array.from({ length: 6 }, (_, index) => {
       </p>
     </div>
 
-    <!-- LAYOUT SYSTEM: ADAPTIVE GRID -->
-    <div class="event-grid">
-      <!-- VISUAL HIERARCHY: GROUPING & COMMON REGIONS -->
-      <div class="event-card" v-for="event in events" :key="event.id">
-        <div class="event-body">
-          <div class="event-meta">
-            <!-- LABEL CONTRAST: Recognition over Recall -->
-            <span class="event-date">{{ event.date }}</span>
-            <span class="event-category">{{ event.category }}</span>
-          </div>
-          <h3 class="event-title">{{ event.title }}</h3>
-          <p class="event-loc">{{ event.location }}</p>
-          <p class="event-desc">{{ event.desc }}</p>
-          <div class="card-footer">
-            <router-link :to="`/browse/events/${event.id}`" class="btn-link">
-              View Event Details &rarr;
-            </router-link>
-          </div>
-        </div>
+    <div class="filters-section">
+      <SearchBox v-model="searchQuery" />
+      <CategoryFilter v-model="selectedCategory" :categories="categories" />
+    </div>
+
+    <div v-if="filteredEvents.length > 0" class="event-grid">
+      <EventCard
+        v-for="event in filteredEvents"
+        :key="event.id"
+        :event="event"
+        @view-detail="handleViewDetail"
+      />
+    </div>
+
+    <div v-else class="empty-state">
+      <div class="empty-icon">📅</div>
+      <h3>No Events Available Yet</h3>
+      <p>
+        There are currently no active events scheduled. Are you an organizer? Publish and manage
+        your first event today through the dashboard.
+      </p>
+      <div class="empty-action">
+        <AppButton variant="primary" @click="router.push('/dashboard')">
+          Go to Organizer Dashboard
+        </AppButton>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.event-list-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .header-section {
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
 .section-title {
@@ -63,94 +96,46 @@ const events = Array.from({ length: 6 }, (_, index) => {
   font-size: 1.1rem;
 }
 
+.filters-section {
+  margin-bottom: var(--space-4);
+}
+
 .event-grid {
-  /* ADAPTIVE GRID: Responsive otomatis menyesuaikan lebar layar */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-6);
 }
 
-.event-card {
-  /* BOUNDARIES: Menciptakan "Common Regions" */
-  background: var(--bg-light);
+.empty-state {
+  padding: var(--space-12);
+  border: 1px dashed var(--border-color);
   border-radius: var(--space-4);
-  border: 1px solid var(--border-color);
+  background: white;
+  text-align: center;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  display: flex;
-  flex-direction: column;
 }
 
-.event-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+.empty-icon {
+  margin-bottom: var(--space-3);
+  font-size: 3.5rem;
 }
 
-.event-body {
-  padding: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.event-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.event-date {
-  background: rgba(102, 68, 255, 0.1);
-  color: var(--primary);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--space-2);
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.event-category {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.event-title {
-  color: var(--text-main);
+.empty-state h3 {
   margin-bottom: var(--space-2);
-}
-
-.event-loc {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  margin-bottom: var(--space-4);
-}
-
-.event-desc {
-  color: var(--text-muted);
-  line-height: 1.6;
-  margin-bottom: var(--space-6);
-  flex-grow: 1;
-}
-
-.card-footer {
-  border-top: 1px solid var(--border-color);
-  padding-top: var(--space-4);
-}
-
-.btn-link {
-  display: inline-block;
   color: var(--text-main);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.2s;
+  font-size: 1.5rem;
 }
 
-.btn-link:hover {
-  color: var(--primary);
+.empty-state p {
+  max-width: 600px;
+  margin: 0 auto var(--space-6);
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.empty-action {
+  display: flex;
+  justify-content: center;
 }
 </style>
