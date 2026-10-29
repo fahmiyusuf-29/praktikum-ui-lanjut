@@ -1,17 +1,38 @@
 <script setup>
-const events = Array.from({ length: 6 }, (_, index) => {
-  const id = index + 1
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useEvent } from '@/Composable/UseEvent'
+import EventCard from '@/components/Event/EventCard.vue'
+import SearchBox from '@/components/Event/SearchBox.vue'
+import CategoryFilter from '@/components/Event/CategoryFilter.vue'
+import AppButton from '@/components/UI/AppButton.vue'
 
-  return {
-    id,
-    title: `Community Gathering ${id}`,
-    date: `Oct ${10 + id}, 2026`,
-    category: 'Community',
-    location: 'Main Auditorium, City Center',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam at velit vel magna interdum scelerisque.',
-  }
+const router = useRouter()
+const { events } = useEvent()
+
+const searchQuery = ref('')
+const selectedCategory = ref('All')
+const categories = ['All', 'Technology', 'Music', 'Workshop', 'Competition', 'Seminar', 'Conference']
+
+const activeEvents = computed(() => events.value.filter((event) => event.status === 'active'))
+
+const filteredEvents = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+
+  return activeEvents.value.filter((event) => {
+    const matchesSearch =
+      (event.title || '').toLowerCase().includes(query) ||
+      (event.description || '').toLowerCase().includes(query)
+    const matchesCategory =
+      selectedCategory.value === 'All' || event.category === selectedCategory.value
+
+    return matchesSearch && matchesCategory
+  })
 })
+
+const handleViewDetail = (eventId) => {
+  router.push(`/browse/events/${eventId}`)
+}
 </script>
 
 <template>
@@ -23,137 +44,98 @@ const events = Array.from({ length: 6 }, (_, index) => {
       </p>
     </div>
 
-    <!-- LAYOUT SYSTEM: ADAPTIVE GRID -->
-    <div class="event-grid">
-      <!-- VISUAL HIERARCHY: GROUPING & COMMON REGIONS -->
-      <div class="event-card" v-for="event in events" :key="event.id">
-        <div class="event-body">
-          <div class="event-meta">
-            <!-- LABEL CONTRAST: Recognition over Recall -->
-            <span class="event-date">{{ event.date }}</span>
-            <span class="event-category">{{ event.category }}</span>
-          </div>
-          <h3 class="event-title">{{ event.title }}</h3>
-          <p class="event-loc">📍 {{ event.location }}</p>
-          <p class="event-desc">{{ event.description }}</p>
-          <div class="card-footer">
-            <router-link :to="`/browse/events/${event.id}`" class="btn-link">
-              View Event Details &rarr;
-            </router-link>
-          </div>
-        </div>
+    <div class="filters-section">
+      <SearchBox v-model="searchQuery" />
+      <CategoryFilter v-model="selectedCategory" :categories="categories" />
+    </div>
+
+    <div v-if="filteredEvents.length > 0" class="event-grid">
+      <EventCard
+        v-for="event in filteredEvents"
+        :key="event.id"
+        :event="event"
+        @view-detail="handleViewDetail"
+      />
+    </div>
+
+    <div v-else class="empty-state">
+      <div class="empty-icon">📅</div>
+      <h3>No Events Available Yet</h3>
+      <p>
+        There are currently no active events scheduled. Are you an organizer? Publish and manage
+        your first event today through the dashboard.
+      </p>
+      <div class="empty-action">
+        <AppButton variant="primary" @click="router.push('/dashboard')">
+          Go to Organizer Dashboard
+        </AppButton>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.event-list-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .header-section {
-  margin-bottom: 3rem;
+  margin-bottom: var(--space-6);
 }
 
 .section-title {
   font-size: 2.2rem;
-  color: #1c1948;
-  margin-bottom: 0.5rem;
+  color: var(--text-main);
+  margin-bottom: var(--space-2);
 }
 
 .section-desc {
-  color: #666;
+  color: var(--text-muted);
   font-size: 1.1rem;
 }
 
+.filters-section {
+  margin-bottom: var(--space-4);
+}
+
 .event-grid {
-  /* ADAPTIVE GRID: Responsive otomatis menyesuaikan lebar layar */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-6);
 }
 
-.event-card {
-  /* BOUNDARIES: Menciptakan "Common Regions" */
-  background: white;
+.empty-state {
+  padding: var(--space-12);
+  border: 1px dashed var(--border-color);
   border-radius: var(--space-4);
+  background: white;
+  text-align: center;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--border-color);
-  transition:
-    all 0.3s ease,
-    border-color 0.3s ease;
-  display: flex;
-  flex-direction: column;
 }
 
-.event-card:hover {
-  transform: translateY(-5px);
-  border-color: #ddd;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+.empty-icon {
+  margin-bottom: var(--space-3);
+  font-size: 3.5rem;
 }
 
-.event-body {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+.empty-state h3 {
+  margin-bottom: var(--space-2);
+  color: var(--text-main);
+  font-size: 1.5rem;
 }
 
-.event-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.event-date {
-  background: rgba(102, 68, 255, 0.1);
-  color: #6644ff;
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.event-category {
-  color: #888;
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.event-body h3 {
-  color: #1c1948;
-  margin-bottom: 0.5rem;
-  font-size: 1.4rem;
-}
-
-.event-loc {
-  color: #666;
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-}
-
-.event-desc {
-  color: #666;
+.empty-state p {
+  max-width: 600px;
+  margin: 0 auto var(--space-6);
+  color: var(--text-muted);
+  font-size: 1rem;
   line-height: 1.6;
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-  flex-grow: 1;
 }
 
-.card-footer {
-  border-top: 1px solid #eee;
-  padding-top: 1.5rem;
-}
-
-.btn-link {
-  display: inline-block;
-  color: #1c1948;
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.btn-link:hover {
-  color: #6644ff;
+.empty-action {
+  display: flex;
+  justify-content: center;
 }
 </style>

@@ -1,237 +1,289 @@
+<script setup>
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useEvent } from '@/Composable/UseEvent'
+import AppButton from '@/components/UI/AppButton.vue'
+import AppCard from '@/components/UI/AppCard.vue'
+
+const route = useRoute()
+const router = useRouter()
+const { events } = useEvent()
+
+const event = computed(() =>
+  events.value.find((item) => String(item.id) === String(route.params.id)),
+)
+</script>
+
 <template>
   <div class="event-detail-page">
-    <button @click="$router.push('/browse/events')" class="btn-back">← Back to Events</button>
+    <template v-if="event">
+      <AppButton variant="outline" class="btn-back" @click="router.push('/browse/events')">
+        ← Back to Events
+      </AppButton>
 
-    <div class="detail-header">
-      <div class="header-content">
-        <span class="event-tag">Community Event</span>
-        <h1>Community Gathering {{ $route.params.id }}</h1>
-        <div class="meta-info">
-          <div class="meta-item">
-            <span class="icon">📅</span>
-            <span>October 15, 2026</span>
+      <AppCard class="detail-header">
+        <div class="header-content">
+          <span class="event-tag">{{ event.category }}</span>
+          <div class="event-heading">
+            <h1>{{ event.title }}</h1>
+            <span
+              class="status-tag"
+              :class="event.status === 'completed' ? 'status-ended' : 'status-live'"
+            >
+              {{ event.status === 'completed' ? 'Event Finished' : 'Live Registration' }}
+            </span>
           </div>
-          <div class="meta-item">
-            <span class="icon">📍</span>
-            <span>Main Auditorium, City Center</span>
-          </div>
-          <div class="meta-item">
-            <span class="icon">👥</span>
-            <span>500+ Attendees</span>
+
+          <div class="event-id">Event ID: #{{ event.id }}</div>
+
+          <div class="meta-info">
+            <span class="meta-item">📅 {{ event.date }}</span>
+            <span class="meta-item">📍 {{ event.location }}</span>
+            <span class="meta-item">👥 Quota: {{ event.quota }} Attendees</span>
           </div>
         </div>
-      </div>
-    </div>
+      </AppCard>
 
-    <div class="detail-content">
-      <div class="main-desc">
-        <h2>About This Event</h2>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam finibus sed nisl. Vivamus
-          hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend
-          nibh porttitor. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis
-          nisl tempor.
-        </p>
-        <p>
-          Suspendisse dictum feugiat nisl ut dapibus. Mauris iaculis porttitor posuere. Praesent id
-          metus massa, ut blandit odio. Proin quis tortor orci. Etiam at risus et justo dignissim
-          congue. Donec congue lacinia dui, a porttitor lectus condimentum laoreet. Nunc eu
-          ullamcorper orci.
-        </p>
+      <div class="detail-content grid-asymmetric">
+        <AppCard class="main-desc">
+          <h2>About This Event</h2>
+          <p>{{ event.description || 'More information about this event will be announced soon.' }}</p>
+        </AppCard>
 
-        <div class="agenda">
-          <h3>Agenda</h3>
-          <ul class="agenda-list">
-            <li><strong>09:00 AM</strong> - Registration &amp; Welcome Coffee</li>
-            <li><strong>10:00 AM</strong> - Opening Keynote Speech</li>
-            <li><strong>11:30 AM</strong> - Networking Session</li>
-            <li><strong>01:00 PM</strong> - Closing Remarks</li>
-          </ul>
+        <div class="sidebar">
+          <AppCard class="ticket-card sticky-pane">
+            <h3>Attendee Registration</h3>
+            <p class="price">{{ event.price || 'Free' }}</p>
+            <p class="ticket-desc">Secure your seat now before the quota is full.</p>
+            <AppButton
+              class="btn-register"
+              variant="primary"
+              :disabled="event.status === 'completed'"
+            >
+              {{ event.status === 'completed' ? 'Registration Closed' : 'Register Now' }}
+            </AppButton>
+            <p v-if="event.status === 'completed'" class="spots">This event has ended.</p>
+            <p v-else class="spots">
+              {{ event.quota }} seats available
+            </p>
+          </AppCard>
         </div>
       </div>
+    </template>
 
-      <div class="sidebar">
-        <div class="ticket-card">
-          <h3>Registrations</h3>
-          <p class="price">Free</p>
-          <p class="status">Don't miss this! Secure your spot today before it runs out.</p>
-          <button class="btn-register">Register Now</button>
-          <p class="spots">Only 45 spots left!</p>
-        </div>
-      </div>
+    <div v-else class="not-found-card">
+      <h2>Event Not Found</h2>
+      <p>The event you are looking for is unavailable or has been removed by the organizer.</p>
+      <AppButton variant="primary" @click="router.push('/browse/events')">
+        Back to Event Catalog
+      </AppButton>
     </div>
   </div>
 </template>
 
 <style scoped>
-.btn-back {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  margin-bottom: 2rem;
-  transition: color 0.2s;
-  padding: 0;
+.event-detail-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.btn-back:hover {
-  color: #6644ff;
+.btn-back {
+  display: inline-flex;
+  margin-bottom: var(--space-6);
 }
 
 .detail-header {
-  background: #f8f9fa;
-  border-radius: 20px;
-  padding: 2rem;
-  border: 1px solid #eee;
-  margin-bottom: 3rem;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--space-4);
+  padding: var(--space-8);
+  margin-bottom: var(--space-8);
 }
 
 .header-content {
-  max-width: 800px;
+  max-width: 900px;
 }
 
 .event-tag {
   display: inline-block;
   background: rgba(102, 68, 255, 0.1);
-  color: #6644ff;
-  padding: 0.4rem 1rem;
-  border-radius: 50px;
+  color: var(--primary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--space-2);
   font-weight: 600;
   font-size: 0.85rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-4);
+}
+
+.event-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
 }
 
 .header-content h1 {
-  color: #1c1948;
-  font-size: 2.8rem;
-  margin-bottom: 2rem;
+  color: var(--text-main);
+  font-size: 2.5rem;
+  margin-bottom: var(--space-2);
   line-height: 1.2;
+}
+
+.status-tag {
+  border-radius: 50px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-live {
+  background: rgba(46, 204, 113, 0.15);
+  color: #27ae60;
+}
+
+.status-ended {
+  background: rgba(108, 117, 125, 0.15);
+  color: #6c757d;
+}
+
+.event-id {
+  margin-bottom: var(--space-4);
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .meta-info {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
+  gap: var(--space-6);
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  color: #555;
+  gap: var(--space-2);
+  color: var(--text-muted);
   font-weight: 500;
-  font-size: 1.05rem;
 }
 
 .detail-content {
-  display: flex;
-  gap: 4rem;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-12);
+}
+
+.grid-asymmetric {
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-12);
 }
 
 .main-desc {
-  flex: 2;
+  min-width: 0;
+  padding: var(--space-8);
 }
 
 .main-desc h2 {
-  color: #1c1948;
-  margin-bottom: 1.5rem;
-  font-size: 1.8rem;
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-bottom: var(--space-4);
+  color: var(--text-main);
+  font-size: 1.8rem;
 }
 
 .main-desc h2::before {
-  content: '';
   display: block;
   width: 4px;
   height: 30px;
-  background: #6644ff;
   border-radius: 2px;
+  background: var(--primary);
+  content: '';
 }
 
 .main-desc p {
-  color: #555;
+  margin-bottom: var(--space-4);
+  color: var(--text-muted);
+  font-size: 1.05rem;
   line-height: 1.8;
-  margin-bottom: 1.5rem;
-  font-size: 1.05rem;
-}
-
-.agenda-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.agenda-list li {
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-  color: #444;
-  font-size: 1.05rem;
+  white-space: pre-line;
 }
 
 .sidebar {
-  flex: 1;
+  min-width: 0;
 }
 
-.ticket-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  border: 1px solid #eee;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  text-align: center;
+.sticky-pane {
   position: sticky;
   top: 100px;
 }
 
+.ticket-card {
+  padding: var(--space-6);
+  text-align: center;
+}
+
 .ticket-card h3 {
-  color: #1c1948;
-  font-size: 1.5rem;
   margin-bottom: 1rem;
+  color: var(--text-main);
+  font-size: 1.5rem;
 }
 
 .price {
+  margin-bottom: 0.5rem;
+  color: var(--primary);
   font-size: 2.8rem;
   font-weight: 800;
-  color: #6644ff;
-  margin-bottom: 0.5rem;
 }
 
-.status {
-  color: #666;
-  margin-bottom: 2rem;
+.ticket-desc {
+  margin-bottom: var(--space-8);
+  color: var(--text-muted);
 }
 
 .btn-register {
+  display: flex;
   width: 100%;
-  padding: 1.2rem;
-  background: #1c1948;
-  color: white;
-  border: none;
-  border-radius: 12px;
+  padding: var(--space-4);
   font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.btn-register:hover {
-  background: #6644ff;
 }
 
 .spots {
-  margin-top: 1.5rem;
+  margin-top: var(--space-4);
   color: #e63946;
-  font-weight: 600;
   font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.not-found-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-4);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--space-4);
+  text-align: center;
+}
+
+.not-found-card h2 {
+  color: var(--text-main);
+}
+
+.not-found-card p {
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
 }
 
 @media (max-width: 900px) {
-  .detail-content {
-    flex-direction: column;
+  .detail-content,
+  .grid-asymmetric {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+
+  .sticky-pane {
+    position: static;
   }
 
   .header-content h1 {

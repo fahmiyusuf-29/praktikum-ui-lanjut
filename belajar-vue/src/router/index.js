@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AppLayout from '@/layouts/App.vue'
+import DashboardLayout from '@/layouts/DasboardLayout.vue'
 
-const router = [
+const routes = [
   {
     path: '/',
     component: AppLayout,
@@ -53,11 +54,27 @@ const router = [
       },
     ],
   },
+  {
+    path: '/dashboard',
+    component: DashboardLayout,
+    children: [
+      {
+        path: '',
+        name: 'dashboard-overview',
+        component: () => import('../views/Dashboard.vue'),
+      },
+      {
+        path: 'events',
+        name: 'dashboard-events',
+        component: () => import('../views/EventManagement.vue'),
+      },
+    ],
+  },
 ]
 
-const routerInstance = createRouter({
+const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: router,
+  routes,
 })
 
-export default routerInstance
+export default router

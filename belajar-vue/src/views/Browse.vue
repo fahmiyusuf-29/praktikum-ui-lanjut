@@ -12,6 +12,7 @@
 
 <style scoped>
 .browse-page {
+  width: 100%;
   animation: fadeIn 0.4s ease;
 }
 

@@ -28,10 +28,7 @@ const breadcrumbs = computed(() => {
   }
 
   // Prepend Beranda if it's not already the first item
-  if (
-    crumbs.length === 0 ||
-    crumbs[0].meta.breadcrumb.toLowerCase() !== 'home'
-  ) {
+  if (crumbs.length === 0 || crumbs[0].meta.breadcrumb.toLowerCase() !== 'home') {
     crumbs.unshift({
       path: '/',
       meta: { breadcrumb: 'Home' },
