@@ -5,26 +5,24 @@ import { useRoute } from 'vue-router'
 const isScrolled = ref(false)
 const route = useRoute()
 
-const menus = [
-  { name: 'home', path: '/' },
-  { name: 'about', path: '/about' },
+const navItems = [
+  { name: 'Home', path: '/' },
+  { name: 'About', path: '/about' },
   {
-    name: 'browse',
+    name: 'Browse',
     path: '/browse',
     children: [
-      {
-        name: 'events',
-        path: '/browse/events',
-        children: [{ name: 'event-detail (sample)', path: '/browse/events/1' }],
-      },
+      { name: 'Event List', path: '/browse/events' },
       { name: 'Category', path: '/browse/category' },
+      { name: 'Your Events', path: '/browse/your-events' },
     ],
   },
-  { name: 'contact', path: '/contact' },
+  { name: 'Contact', path: '/contact' },
+  { name: 'Organizer Dashboard', path: '/dashboard' },
 ]
 
 const handleScroll = () => {
-  isScrolled.value = window.scrollY > 10
+  isScrolled.value = window.scrollY > 50
 }
 
 onMounted(() => {
@@ -60,7 +58,7 @@ onUnmounted(() => {
       </router-link>
 
       <ul class="nav-menu">
-        <li class="nav-item" v-for="menu in menus" :key="menu.name">
+        <li class="nav-item" v-for="menu in navItems" :key="menu.name">
           <router-link
             :to="menu.path"
             class="nav-link"

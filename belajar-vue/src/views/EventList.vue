@@ -8,25 +8,23 @@ import CategoryFilter from '@/components/Event/CategoryFilter.vue'
 import AppButton from '@/components/UI/AppButton.vue'
 
 const router = useRouter()
-const { events } = useEvent()
+const { activeEvents, hasRegistration } = useEvent()
 
 const searchQuery = ref('')
 const selectedCategory = ref('All')
 const categories = ['All', 'Technology', 'Music', 'Workshop', 'Competition', 'Seminar', 'Conference']
 
-const activeEvents = computed(() => events.value.filter((event) => event.status === 'active'))
-
 const filteredEvents = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
 
   return activeEvents.value.filter((event) => {
-    const matchesSearch =
-      (event.title || '').toLowerCase().includes(query) ||
-      (event.description || '').toLowerCase().includes(query)
+    const title = (event.title || '').toLowerCase()
+    const description = (event.desc || event.description || '').toLowerCase()
+    const matchesQuery = title.includes(query) || description.includes(query)
     const matchesCategory =
       selectedCategory.value === 'All' || event.category === selectedCategory.value
 
-    return matchesSearch && matchesCategory
+    return matchesQuery && matchesCategory
   })
 })
 
@@ -49,11 +47,12 @@ const handleViewDetail = (eventId) => {
       <CategoryFilter v-model="selectedCategory" :categories="categories" />
     </div>
 
-    <div v-if="filteredEvents.length > 0" class="event-grid">
+    <div v-if="filteredEvents.length" class="event-grid">
       <EventCard
         v-for="event in filteredEvents"
         :key="event.id"
         :event="event"
+        :is-registered="hasRegistration(event.id)"
         @view-detail="handleViewDetail"
       />
     </div>
@@ -97,7 +96,7 @@ const handleViewDetail = (eventId) => {
 }
 
 .filters-section {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .event-grid {
@@ -107,31 +106,39 @@ const handleViewDetail = (eventId) => {
 }
 
 .empty-state {
-  padding: var(--space-12);
+  text-align: center;
+  padding: var(--space-12) var(--space-8);
+  background: white;
   border: 1px dashed var(--border-color);
   border-radius: var(--space-4);
-  background: white;
-  text-align: center;
+  max-width: 680px;
+  margin: var(--space-8) auto;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
 }
 
 .empty-icon {
-  margin-bottom: var(--space-3);
-  font-size: 3.5rem;
+  display: inline-block;
+  padding: var(--space-3);
+  background: var(--bg-light);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 50%;
+  margin-bottom: var(--space-4);
 }
 
 .empty-state h3 {
-  margin-bottom: var(--space-2);
-  color: var(--text-main);
   font-size: 1.5rem;
+  color: var(--text-main);
+  margin-bottom: var(--space-2);
 }
 
 .empty-state p {
-  max-width: 600px;
-  margin: 0 auto var(--space-6);
+  line-height: 1.6;
+  margin-bottom: var(--space-6);
   color: var(--text-muted);
   font-size: 1rem;
-  line-height: 1.6;
 }
 
 .empty-action {

@@ -11,19 +11,19 @@ const routes = [
         path: '',
         name: 'home',
         component: () => import('../views/Home.vue'),
-        meta: { breadcrumb: 'home' },
+        meta: { breadcrumb: 'Home' },
       },
       {
-        path: '/about',
+        path: 'about',
         name: 'about',
         component: () => import('../views/About.vue'),
-        meta: { breadcrumb: 'about' },
+        meta: { breadcrumb: 'About' },
       },
       {
         path: 'browse',
         name: 'browse',
         component: () => import('../views/Browse.vue'),
-        meta: { breadcrumb: 'browse' },
+        meta: { breadcrumb: 'Browse' },
         redirect: '/browse/events',
         children: [
           {
@@ -39,10 +39,28 @@ const routes = [
             meta: { breadcrumb: 'Event Detail' },
           },
           {
+            path: 'events/:id/register',
+            name: 'event-registration',
+            component: () => import('../views/EventRegistration.vue'),
+            meta: { breadcrumb: 'Event Registration' },
+          },
+          {
+            path: 'events/:id/ticket',
+            name: 'ticket-receipt',
+            component: () => import('../components/Event/TicketReceipt.vue'),
+            meta: { breadcrumb: 'Ticket Receipt' },
+          },
+          {
             path: 'category',
             name: 'category',
             component: () => import('../views/Category.vue'),
             meta: { breadcrumb: 'Category' },
+          },
+          {
+            path: 'your-events',
+            name: 'your-events',
+            component: () => import('../views/YourEvent.vue'),
+            meta: { breadcrumb: 'Your Events' },
           },
         ],
       },

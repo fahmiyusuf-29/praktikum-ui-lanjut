@@ -1,71 +1,138 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useEvent } from '@/Composable/UseEvent'
 import AppButton from '@/components/UI/AppButton.vue'
 import AppCard from '@/components/UI/AppCard.vue'
+import RegistrationReceipt from '@/components/Event/RegistrationReceipt.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { events } = useEvent()
+const { events, hasRegistration, getRegistrationsByEventId } = useEvent()
 
 const event = computed(() =>
   events.value.find((item) => String(item.id) === String(route.params.id)),
 )
+const showReceipt = ref(false)
+const confirmation = ref(null)
+
+const isEventDone = computed(
+  () => event.value?.done || ['completed', 'done'].includes(event.value?.status),
+)
+const isRegistered = computed(() =>
+  event.value ? hasRegistration(event.value.id) : false,
+)
+const existingRegistration = computed(() =>
+  event.value ? getRegistrationsByEventId(event.value.id)[0] : null,
+)
+const displayedConfirmation = computed(() => confirmation.value || existingRegistration.value)
+const isSoldOut = computed(() => Number(event.value?.quota) <= 0)
+
 </script>
 
 <template>
   <div class="event-detail-page">
     <template v-if="event">
-      <AppButton variant="outline" class="btn-back" @click="router.push('/browse/events')">
+      <button type="button" class="btn-back" @click="router.push('/browse/events')">
         ← Back to Events
-      </AppButton>
+      </button>
 
       <AppCard class="detail-header">
         <div class="header-content">
-          <span class="event-tag">{{ event.category }}</span>
-          <div class="event-heading">
-            <h1>{{ event.title }}</h1>
-            <span
-              class="status-tag"
-              :class="event.status === 'completed' ? 'status-ended' : 'status-live'"
-            >
-              {{ event.status === 'completed' ? 'Event Finished' : 'Live Registration' }}
+          <div class="header-tags">
+            <span class="event-tag">{{ event.category }}</span>
+            <span v-if="isEventDone" class="status-tag status-ended">Event Finished</span>
+            <span v-else-if="isRegistered" class="status-tag status-registered">
+              Registered
             </span>
+            <span v-else class="status-tag status-live">Live Registration</span>
           </div>
 
-          <div class="event-id">Event ID: #{{ event.id }}</div>
+          <h1>{{ event.title }}</h1>
 
           <div class="meta-info">
-            <span class="meta-item">📅 {{ event.date }}</span>
-            <span class="meta-item">📍 {{ event.location }}</span>
-            <span class="meta-item">👥 Quota: {{ event.quota }} Attendees</span>
+            <span class="meta-item"><strong>Date:</strong> {{ event.date }}</span>
+            <span class="meta-item"><strong>Location:</strong> {{ event.location }}</span>
+            <span class="meta-item">
+              <strong>Quota:</strong> {{ event.quota }} Attendees
+            </span>
           </div>
         </div>
       </AppCard>
 
       <div class="detail-content grid-asymmetric">
-        <AppCard class="main-desc">
-          <h2>About This Event</h2>
-          <p>{{ event.description || 'More information about this event will be announced soon.' }}</p>
-        </AppCard>
+        <div class="main-column">
+          <AppCard class="main-desc">
+            <h2>About This Event</h2>
+            <p>
+              {{ event.desc || event.description || 'More information about this event will be announced soon.' }}
+            </p>
+          </AppCard>
+
+          <RegistrationReceipt
+            v-if="showReceipt && displayedConfirmation"
+            :confirmation="displayedConfirmation"
+            :event="event"
+          />
+
+        </div>
 
         <div class="sidebar">
           <AppCard class="ticket-card sticky-pane">
             <h3>Attendee Registration</h3>
             <p class="price">{{ event.price || 'Free' }}</p>
             <p class="ticket-desc">Secure your seat now before the quota is full.</p>
+
             <AppButton
-              class="btn-register"
-              variant="primary"
-              :disabled="event.status === 'completed'"
+              v-if="isEventDone"
+              variant="secondary"
+              class="btn-register btn-disabled"
+              disabled
             >
-              {{ event.status === 'completed' ? 'Registration Closed' : 'Register Now' }}
+              Registration Closed
             </AppButton>
-            <p v-if="event.status === 'completed'" class="spots">This event has ended.</p>
-            <p v-else class="spots">
-              {{ event.quota }} seats available
+
+            <div v-else-if="isRegistered" class="registered-action-group">
+              <AppButton
+                variant="secondary"
+                class="btn-register btn-disabled"
+                disabled
+              >
+                Already Registered
+              </AppButton>
+              <button
+                type="button"
+                class="view-receipt-link"
+                @click="showReceipt = !showReceipt"
+              >
+                {{ showReceipt ? 'Hide Ticket Receipt' : 'View Ticket Receipt' }}
+              </button>
+            </div>
+
+            <AppButton
+              v-else-if="isSoldOut"
+              variant="secondary"
+              class="btn-register btn-disabled"
+              disabled
+            >
+              Sold Out
+            </AppButton>
+
+            <AppButton
+              v-else
+              variant="primary"
+              class="btn-register"
+              @click="router.push(`/browse/events/${event.id}/register`)"
+            >
+              Register Now
+            </AppButton>
+
+            <p v-if="isEventDone" class="spots">This event has concluded.</p>
+            <p v-else-if="isRegistered" class="spots registered-note">
+              You are registered for this event. Your booking is confirmed.
             </p>
+            <p v-else-if="isSoldOut" class="spots">No seats remaining.</p>
+            <p v-else class="spots">{{ event.quota }} seats available</p>
           </AppCard>
         </div>
       </div>
@@ -90,49 +157,56 @@ const event = computed(() =>
 
 .btn-back {
   display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-6);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-back:hover {
+  color: var(--primary);
 }
 
 .detail-header {
-  background: var(--bg-light);
+  margin-bottom: var(--space-8);
+  padding: var(--space-8);
   border: 1px solid var(--border-color);
   border-radius: var(--space-4);
-  padding: var(--space-8);
-  margin-bottom: var(--space-8);
+  background: var(--bg-light);
 }
 
 .header-content {
   max-width: 900px;
 }
 
-.event-tag {
-  display: inline-block;
-  background: rgba(102, 68, 255, 0.1);
-  color: var(--primary);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--space-2);
-  font-weight: 600;
-  font-size: 0.85rem;
-  margin-bottom: var(--space-4);
-}
-
-.event-heading {
+.header-tags {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
-.header-content h1 {
-  color: var(--text-main);
-  font-size: 2.5rem;
-  margin-bottom: var(--space-2);
-  line-height: 1.2;
+.event-tag {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--space-2);
+  background: rgba(102, 68, 255, 0.1);
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .status-tag {
+  padding: var(--space-1) var(--space-3);
   border-radius: 50px;
-  padding: 8px 14px;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -142,15 +216,21 @@ const event = computed(() =>
   color: #27ae60;
 }
 
+.status-registered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
 .status-ended {
   background: rgba(108, 117, 125, 0.15);
   color: #6c757d;
 }
 
-.event-id {
+.header-content h1 {
   margin-bottom: var(--space-4);
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  color: var(--text-main);
+  font-size: 2.5rem;
+  line-height: 1.2;
 }
 
 .meta-info {
@@ -160,26 +240,30 @@ const event = computed(() =>
 }
 
 .meta-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   color: var(--text-muted);
   font-weight: 500;
 }
 
-.detail-content {
+.meta-item strong {
+  color: var(--text-main);
+}
+
+.detail-content,
+.grid-asymmetric {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
   gap: var(--space-12);
 }
 
-.grid-asymmetric {
-  grid-template-columns: 2fr 1fr;
-  gap: var(--space-12);
+.main-column,
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
 }
 
 .main-desc {
-  min-width: 0;
   padding: var(--space-8);
 }
 
@@ -207,10 +291,6 @@ const event = computed(() =>
   font-size: 1.05rem;
   line-height: 1.8;
   white-space: pre-line;
-}
-
-.sidebar {
-  min-width: 0;
 }
 
 .sticky-pane {
@@ -248,11 +328,37 @@ const event = computed(() =>
   font-size: 1.1rem;
 }
 
+.btn-disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.registered-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.view-receipt-link {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .spots {
   margin-top: var(--space-4);
   color: #e63946;
   font-size: 0.95rem;
   font-weight: 600;
+}
+
+.registered-note {
+  color: #27ae60;
 }
 
 .not-found-card {
