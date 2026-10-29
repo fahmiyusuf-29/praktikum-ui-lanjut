@@ -1,3 +1,25 @@
+<template>
+  <AppCard class="event-card-wrapper">
+    <div class="event-body">
+      <div class="event-meta">
+        <div class="meta-left">
+          <span class="event-date">{{ formatDate(event.date) }}</span>
+          <span v-if="isRegistered" class="badge-registered">Registered</span>
+        </div>
+        <span class="event-category">{{ event.category }}</span>
+      </div>
+
+      <h3 class="event-title">{{ event.title }}</h3>
+      <p class="event-loc">📍 {{ event.location }}</p>
+      <p class="event-desc">{{ event.desc || event.description }}</p>
+
+      <div class="card-footer">
+        <button class="btn-link" @click="$emit('view-detail', event.id)">View Details</button>
+      </div>
+    </div>
+  </AppCard>
+</template>
+
 <script setup>
 import AppCard from '@/components/UI/AppCard.vue'
 
@@ -6,42 +28,32 @@ defineProps({
     type: Object,
     required: true,
   },
+  isRegistered: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['view-detail'])
+
+const formatDate = (date) => {
+  if (!date) return ''
+
+  const parsedDate = new Date(date)
+  if (Number.isNaN(parsedDate.getTime())) return date
+
+  return parsedDate.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 </script>
-
-<template>
-  <div class="event-card-wrapper">
-    <AppCard class="event-card">
-      <div class="event-body">
-        <div class="event-meta">
-          <span class="event-date">{{ event.date }}</span>
-          <span class="event-category">{{ event.category }}</span>
-        </div>
-
-        <h3 class="event-title">{{ event.title }}</h3>
-        <p class="event-loc">📍 {{ event.location }}</p>
-        <p class="event-desc">{{ event.description }}</p>
-
-        <div class="card-footer">
-          <button class="btn-link" @click="$emit('view-detail', event.id)">
-            View Event Details
-          </button>
-        </div>
-      </div>
-    </AppCard>
-  </div>
-</template>
 
 <style scoped>
 .event-card-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
-}
-
-.event-card {
   height: 100%;
 }
 
@@ -54,19 +66,38 @@ defineEmits(['view-detail'])
 
 .event-meta {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
 
+.meta-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .event-date {
-  padding: var(--space-1) var(--space-2);
-  border-radius: 6px;
   background: rgba(102, 68, 255, 0.1);
   color: var(--primary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: 6px;
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.badge-registered {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid #a7f3d0;
 }
 
 .event-category {
@@ -78,38 +109,39 @@ defineEmits(['view-detail'])
 }
 
 .event-title {
-  margin-bottom: var(--space-2);
+  font-size: 1.15rem;
   color: var(--text-main);
+  margin: var(--space-3) 0 var(--space-2);
+  line-height: 1.4;
 }
 
 .event-loc {
-  margin-bottom: var(--space-4);
   color: var(--text-muted);
   font-size: 0.9rem;
+  margin-bottom: var(--space-4);
 }
 
 .event-desc {
-  margin-bottom: var(--space-6);
   color: var(--text-muted);
   line-height: 1.6;
   flex-grow: 1;
+  margin-bottom: var(--space-6);
 }
 
 .card-footer {
-  margin-top: auto;
-  padding-top: var(--space-4);
   border-top: 1px solid var(--border-color);
+  padding-top: var(--space-4);
 }
 
 .btn-link {
-  padding: 0;
-  border: none;
   background: none;
+  border: none;
+  cursor: pointer;
   color: var(--text-main);
   font-weight: 600;
   text-decoration: none;
-  cursor: pointer;
-  transition: color 0.2s;
+  font-size: 1rem;
+  padding: 0;
 }
 
 .btn-link:hover {

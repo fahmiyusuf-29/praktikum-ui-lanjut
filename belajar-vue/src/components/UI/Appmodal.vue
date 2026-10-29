@@ -20,6 +20,22 @@ defineProps({
     type: String,
     default: 'Cancel',
   },
+  showCancel: {
+    type: Boolean,
+    default: true,
+  },
+  variant: {
+    type: String,
+    default: 'danger',
+  },
+  badgeText: {
+    type: String,
+    default: '',
+  },
+  badgeVariant: {
+    type: String,
+    default: 'warning',
+  },
 })
 
 defineEmits(['confirm', 'close'])
@@ -30,8 +46,12 @@ defineEmits(['confirm', 'close'])
     <div v-if="isOpen" class="modal-overlay" @click.self="$emit('close')">
       <div class="modal-card">
         <div class="modal-header">
-          <div class="modal-icon">⚠️</div>
-          <h3 class="modal-title">{{ title }}</h3>
+          <div class="modal-header-content">
+            <span v-if="badgeText" :class="['badge', `badge-${badgeVariant}`]">
+              {{ badgeText }}
+            </span>
+            <h3 class="modal-title">{{ title }}</h3>
+          </div>
         </div>
 
         <div class="modal-body">
@@ -40,12 +60,18 @@ defineEmits(['confirm', 'close'])
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" @click="$emit('close')">
-            {{ cancelText }}
-          </button>
-          <button type="button" class="btn-confirm" @click="$emit('confirm')">
-            {{ confirmText }}
-          </button>
+          <slot name="footer">
+            <button v-if="showCancel" type="button" class="btn-cancel" @click="$emit('close')">
+              {{ cancelText }}
+            </button>
+            <button
+              type="button"
+              :class="['btn-confirm', `btn-${variant}`]"
+              @click="$emit('confirm')"
+            >
+              {{ confirmText }}
+            </button>
+          </slot>
         </div>
       </div>
     </div>
@@ -72,8 +98,8 @@ defineEmits(['confirm', 'close'])
 .modal-card {
   background: white;
   width: 100%;
-  max-width: 420px;
-  border-radius: var(--space-3);
+  max-width: 480px;
+  border-radius: var(--space-4);
   padding: var(--space-6);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-color);
@@ -94,21 +120,51 @@ defineEmits(['confirm', 'close'])
 
 .modal-header {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
+  align-items: flex-start;
   margin-bottom: var(--space-3);
 }
 
-.modal-icon {
-  font-size: 1.8rem;
-  line-height: 1;
+.modal-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .modal-title {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.badge-primary {
+  background: #e9d8fd;
+  color: #6b46c1;
+  border: 1px solid #d6bcfa;
+}
+
+.badge-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
 .modal-body {
@@ -145,9 +201,11 @@ defineEmits(['confirm', 'close'])
 }
 
 .btn-confirm {
-  background: #e63946;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: white;
-  border: none;
+  border: 1px solid transparent;
   padding: var(--space-2) var(--space-5);
   border-radius: 8px;
   font-weight: 600;
@@ -155,11 +213,44 @@ defineEmits(['confirm', 'close'])
   cursor: pointer;
   transition:
     background-color 0.2s,
-    transform 0.1s;
+    transform 0.1s,
+    box-shadow 0.2s;
 }
 
-.btn-confirm:hover {
+.btn-confirm.btn-danger {
+  background: #e63946;
+  box-shadow: 0 4px 14px rgba(230, 57, 70, 0.25);
+}
+
+.btn-confirm.btn-danger:hover {
   background: #d62828;
+}
+
+.btn-confirm.btn-primary {
+  background: var(--primary);
+  box-shadow: 0 4px 14px rgba(102, 68, 255, 0.25);
+}
+
+.btn-confirm.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-confirm.btn-success {
+  background: #16a34a;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+}
+
+.btn-confirm.btn-success:hover {
+  background: #15803d;
+}
+
+.btn-confirm.btn-warning {
+  background: #f59e0b;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+}
+
+.btn-confirm.btn-warning:hover {
+  background: #d97706;
 }
 
 .btn-confirm:active {
