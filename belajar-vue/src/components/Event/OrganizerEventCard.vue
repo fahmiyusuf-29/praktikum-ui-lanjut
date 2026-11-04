@@ -1,5 +1,5 @@
 <script setup>
-import AppCard from '@/components/UI/AppCard.vue'
+import AppCard from '@/components/UI/AppCard.vue';
 
 defineProps({
   event: {
@@ -10,71 +10,49 @@ defineProps({
     type: Boolean,
     default: false,
   },
-})
+});
 
-defineEmits(['view-detail', 'complete', 'delete'])
+defineEmits(['view-detail', 'complete', 'delete']);
 </script>
 
 <template>
   <AppCard :class="['organizer-event-card', { 'card-completed': isCompleted }]">
-    <div class="card-content">
-      <div class="card-header">
-        <span class="category-badge">{{ event.category }}</span>
-        <span :class="['status-badge', isCompleted ? 'status-completed' : 'status-active']">
-          {{ isCompleted ? 'Completed' : event.status === 'draft' ? 'Draft' : 'Active' }}
-        </span>
-      </div>
+    <div class="card-header">
+      <span class="category-badge">{{ event.cat }}</span>
+      <span :class="['status-badge', isCompleted ? 'status-completed' : 'status-active']">
+        {{ isCompleted ? 'Completed' : 'Active' }}
+      </span>
+    </div>
 
-      <h3 :class="['event-title', { 'text-strike': isCompleted }]">{{ event.title }}</h3>
-      <p class="event-meta">📅 {{ event.date }} &nbsp; • &nbsp; 📍 {{ event.location }}</p>
-      <p class="event-desc">{{ event.desc || event.description }}</p>
+    <h3 :class="['event-title', { 'text-strike': isCompleted }]">{{ event.title }}</h3>
+    <p class="event-meta">📅 {{ event.date }} &nbsp; • &nbsp; 📍 {{ event.loc }}</p>
+    <p class="event-desc">{{ event.desc }}</p>
 
-      <div v-if="isCompleted" class="completed-notice">
-        ⚠️ This event has ended and is archived from the public catalog.
-      </div>
+    <div v-if="isCompleted" class="completed-notice">
+      ⚠️ This event has ended and is archived from the public catalog.
+    </div>
 
-      <div class="card-actions">
-        <template v-if="!isCompleted">
-          <button
-            type="button"
-            class="btn-action btn-detail"
-            @click="$emit('view-detail', event.id)"
-          >
-            ◉ View Details
-          </button>
-          <button
-            type="button"
-            class="btn-action btn-complete"
-            @click="$emit('complete', event)"
-          >
-            ✓ Complete Event
-          </button>
-          <button
-            type="button"
-            class="btn-action btn-delete"
-            @click="$emit('delete', event)"
-          >
-            🗑 Delete
-          </button>
-        </template>
+    <div class="card-actions">
+      <template v-if="!isCompleted">
+        <button
+          class="btn-action btn-detail"
+          @click="$emit('view-detail', event.id)"
+        >
+          ◉ View Details
+        </button>
+        <button class="btn-action btn-complete" @click="$emit('complete', event)">
+          ✅ Complete Event
+        </button>
+        <button class="btn-action btn-delete" @click="$emit('delete', event)">
+          🗑 Delete
+        </button>
+      </template>
 
-        <template v-else>
-          <button
-            type="button"
-            class="btn-action btn-detail"
-            @click="$emit('view-detail', event.id)"
-          >
-            ◉ View Details
-          </button>
-          <button
-            type="button"
-            class="btn-action btn-delete"
-            @click="$emit('delete', event)"
-          >
-            🗑 Delete from Archive
-          </button>
-        </template>
-      </div>
+      <template v-else>
+        <button class="btn-action btn-delete" @click="$emit('delete', event)">
+          🗑 Delete from Archive
+        </button>
+      </template>
     </div>
   </AppCard>
 </template>
@@ -85,12 +63,6 @@ defineEmits(['view-detail', 'complete', 'delete'])
   display: flex;
   flex-direction: column;
   height: 100%;
-}
-
-.card-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
 }
 
 .card-header {
@@ -135,12 +107,12 @@ defineEmits(['view-detail', 'complete', 'delete'])
 
 .text-strike {
   text-decoration: line-through;
-  color: #94a3b8;
+  color: #8a8d93;
 }
 
 .card-completed {
   opacity: 0.85;
-  background-color: #f8fafc;
+  background-color: #fafbfc;
 }
 
 .event-meta {
@@ -150,7 +122,7 @@ defineEmits(['view-detail', 'complete', 'delete'])
 }
 
 .event-desc {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--text-muted);
   line-height: 1.6;
   margin-bottom: var(--space-6);
@@ -159,32 +131,30 @@ defineEmits(['view-detail', 'complete', 'delete'])
 
 .completed-notice {
   background: #f1f5f9;
-  color: #64748b;
-  padding: var(--space-2);
+  color: #49505f;
+  padding: var(--space-3);
   border-radius: 6px;
-  margin-bottom: var(--space-4);
   font-size: 0.85rem;
+  margin-bottom: var(--space-4);
 }
 
 .card-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-2);
+  flex-wrap: wrap;
   padding-top: var(--space-4);
   border-top: 1px solid var(--border-color);
 }
 
 .btn-action {
   flex: 1;
-  min-width: max-content;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   border-radius: 6px;
   border: 1px solid var(--border-color);
-  background: white;
-  color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  background: white;
   transition: all 0.2s;
   white-space: nowrap;
 }
@@ -197,7 +167,7 @@ defineEmits(['view-detail', 'complete', 'delete'])
 
 .btn-complete {
   color: #27ae60;
-  border-color: #27ae60;
+  border-color: rgba(39, 174, 96, 0.3);
 }
 
 .btn-complete:hover {
@@ -207,7 +177,8 @@ defineEmits(['view-detail', 'complete', 'delete'])
 
 .btn-delete {
   color: #e63946;
-  border-color: #e63946;
+  border-color: rgba(230, 57, 70, 0.3);
+  flex: 0 0 auto;
 }
 
 .btn-delete:hover {

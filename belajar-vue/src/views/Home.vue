@@ -50,6 +50,12 @@ import AppCard from '@/components/UI/AppCard.vue'
 </template>
 
 <style scoped>
+.home-page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
 .hero-section {
   display: flex;
   align-items: center;
@@ -64,14 +70,16 @@ import AppCard from '@/components/UI/AppCard.vue'
 }
 
 .hero-content {
-  max-width: 800px;
+  width: 100%;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .hero-title {
-  font-size: 4rem;
+  max-width: 720px;
+  font-size: clamp(2.5rem, 5vw, 4rem);
   font-weight: 800;
   color: var(--text-main);
   line-height: 1.1;
@@ -132,13 +140,17 @@ import AppCard from '@/components/UI/AppCard.vue'
 }
 
 @media (max-width: 768px) {
+  .home-page {
+    max-width: 100%;
+  }
+
   .hero-section {
     min-height: 65svh;
     padding: var(--space-8) var(--space-4);
   }
 
   .hero-title {
-    font-size: 2.5rem;
+    font-size: clamp(2rem, 8vw, 2.5rem);
   }
 }
 </style>

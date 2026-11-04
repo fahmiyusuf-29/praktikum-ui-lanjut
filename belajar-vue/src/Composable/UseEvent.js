@@ -1,218 +1,368 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue';
 
-const defaultEvents = []
+// STORAGE KEYS
+const EVENTS_STORAGE_KEY = 'gatherly_events';
+const REGISTRATIONS_STORAGE_KEY = 'gatherly_user_registrations';
 
-const EVENTS_STORAGE_KEY = 'gatherly_events'
-const REGISTRATIONS_STORAGE_KEY = 'gatherly_registrations'
+// REST API CONFIGURATION
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  return envUrl ? envUrl.trim().replace(/\/+$/, '') : '';
+};
 
-const eventData = ref(JSON.parse(localStorage.getItem(EVENTS_STORAGE_KEY) || '[]'))
-const registrationData = ref(
-  JSON.parse(localStorage.getItem(REGISTRATIONS_STORAGE_KEY) || '[]'),
-)
-const eventIdCounter = ref(100)
+const isApiConfigured = (baseUrl) => {
+  if (!baseUrl || /x{4,}/i.test(baseUrl)) return false;
 
+  try {
+    const url = new URL(baseUrl);
+    return ['http:', 'https:'].includes(url.protocol);
+  } catch {
+    return false;
+  }
+};
+
+const normalizeEvent = (event) => {
+  const category = event.cat ?? event.category ?? 'General';
+  const location = event.loc ?? event.location ?? '';
+  const done = Boolean(event.done || ['completed', 'done'].includes(event.status));
+
+  return {
+    ...event,
+    cat: category,
+    category,
+    loc: location,
+    location,
+    done,
+    status: done ? 'completed' : (event.status ?? 'active'),
+  };
+};
+
+// STATE SINGLETON TERPUSAT
+const savedData = localStorage.getItem(EVENTS_STORAGE_KEY);
+const events = ref(savedData ? JSON.parse(savedData).map(normalizeEvent) : []);
+
+const savedRegs = localStorage.getItem(REGISTRATIONS_STORAGE_KEY);
+const userRegistrations = ref(savedRegs ? JSON.parse(savedRegs) : []);
+
+// ASYNCHRONOUS NETWORK STATES (MODUL 6)
+const loading = ref(false);
+const error = ref(null);
+
+// WATCHERS (Sinkronisasi status lokal ke LocalStorage sebagai cache preferensi)
 watch(
-  eventData,
+  events,
   (newEvents) => {
-    localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(newEvents))
+    localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(newEvents));
   },
   { deep: true },
-)
+);
 
 watch(
-  registrationData,
-  (newRegistrations) => {
-    localStorage.setItem(REGISTRATIONS_STORAGE_KEY, JSON.stringify(newRegistrations))
+  userRegistrations,
+  (newRegs) => {
+    localStorage.setItem(REGISTRATIONS_STORAGE_KEY, JSON.stringify(newRegs));
   },
   { deep: true },
-)
+);
 
-export function useEvent() {
-  const events = computed(() => eventData.value.filter((event) => !event.deleted))
-  const deletedEvents = computed(() => eventData.value.filter((event) => event.deleted))
+export function useEvents() {
+  // DERIVED STATE (Dihitung otomatis menggunakan computed)
+  const totalEvents = computed(() => events.value.length);
+  const activeEvents = computed(() => events.value.filter((e) => !e.done));
+  const completedEvents = computed(() => events.value.filter((e) => e.done));
+  const totalRegistrations = computed(() => userRegistrations.value.length);
+  const eventStats = computed(() => ({
+    totalEvents: totalEvents.value,
+    upcoming: activeEvents.value.length,
+    completed: completedEvents.value.length,
+  }));
 
-  const activeEvents = computed(() =>
-    events.value.filter((event) => ['active', 'upcoming'].includes(event.status)),
-  )
-  const completedEvents = computed(() =>
-    events.value.filter((event) => ['completed', 'done'].includes(event.status) || event.done),
-  )
-  const totalRegistrations = computed(() =>
-    events.value.reduce((sum, event) => sum + (Number(event.registrationCount) || 0), 0),
-  )
+  // 1. HTTP GET: MENGAMBIL SELURUH DATA ACARA DARI REST API
+  const fetchEvents = async () => {
+    loading.value = true;
+    error.value = null;
 
-  const eventStats = computed(() => {
-    const now = new Date()
-    const thisMonth = events.value.filter((event) => {
-      const eventDate = new Date(event.date)
-      return (
-        eventDate.getMonth() === now.getMonth() &&
-        eventDate.getFullYear() === now.getFullYear()
-      )
-    }).length
+    const baseUrl = getApiBaseUrl();
 
-    return {
-      totalEvents: events.value.length,
-      upcoming: activeEvents.value.length,
-      completed: completedEvents.value.length,
-      draft: events.value.filter((event) => event.status === 'draft').length,
-      thisMonth,
+    // Validasi apakah endpoint MockAPI sudah dikonfigurasi di file .env
+    if (!isApiConfigured(baseUrl)) {
+      loading.value = false;
+      return events.value;
     }
-  })
 
-  if (eventData.value.length === 0) {
-    eventData.value = defaultEvents
-  }
-
-  const createEvent = (input) => {
-    const nextEvent = { ...input }
-    const cleanLocation = nextEvent.location?.replace(/[^\w\s,-]/g, '').trim()
-    const description = (input.desc ?? input.description ?? '').trim()
-
-    nextEvent.id = Date.now()
-    nextEvent.location = cleanLocation || ''
-    nextEvent.date = new Date(nextEvent.date)
-    nextEvent.createdAt = new Date().toISOString().slice(0, 10)
-    nextEvent.eventDate = new Date(nextEvent.date).toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-    nextEvent.desc = description
-    nextEvent.description = description
-    nextEvent.status = 'upcoming'
-    eventData.value.unshift(nextEvent)
-
-    return nextEvent
-  }
-
-  const completeEvent = (id) => {
-    const target = events.value.find((event) => event.id === Number(id))
-    if (target) {
-      target.done = true
-      target.status = 'completed'
+    try {
+      const response = await fetch(`${baseUrl}/events`);
+      if (!response.ok) {
+        throw new Error(
+          `Gagal mengambil data dari server (Status HTTP: ${response.status} ${response.statusText || ''})`,
+        );
+      }
+      const data = await response.json();
+      events.value = Array.isArray(data) ? data.map(normalizeEvent) : [];
+      return events.value;
+    } catch (err) {
+      error.value = err.message || 'Terjadi kegagalan jaringan saat menghubungi server API.';
+    } finally {
+      loading.value = false;
     }
-  }
+  };
 
-  const addEvent = (event) => {
-    const newEvent = { ...event, id: eventIdCounter.value++ }
-    eventData.value.push(newEvent)
-    return newEvent
-  }
+  // 2. HTTP GET BY ID: MENGAMBIL RINCIAN ACARA BERDASARKAN ID
+  const fetchEventById = async (id) => {
+    if (!id) return null;
+    const strId = String(id);
 
-  const updateEvent = (id, updatedData) => {
-    const index = eventData.value.findIndex((event) => event.id === Number(id))
-    if (index !== -1) {
-      eventData.value[index] = { ...eventData.value[index], ...updatedData }
+    // Cek terlebih dahulu di memory state
+    const existing = events.value.find((e) => String(e.id) === strId);
+    if (existing) return existing;
+
+    const baseUrl = getApiBaseUrl();
+    if (!isApiConfigured(baseUrl)) {
+      return null;
     }
-  }
 
-  const deleteEvent = (id) => {
-    const target = eventData.value.find((event) => event.id === Number(id))
-    if (target) {
-      target.deleted = true
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await fetch(`${baseUrl}/events/${strId}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Acara tidak ditemukan pada server.');
+        }
+        throw new Error(`Gagal mengambil detail acara (Status HTTP: ${response.status})`);
+      }
+
+      const eventData = normalizeEvent(await response.json());
+
+      // Simpan ke daftar state jika belum ada
+      if (!events.value.some((e) => String(e.id) === String(eventData.id))) {
+        events.value.push(eventData);
+      }
+
+      return eventData;
+    } catch (err) {
+      error.value = err.message;
+      return null;
+    } finally {
+      loading.value = false;
     }
-  }
+  };
 
-  const permanentDelete = (id) => {
-    const eventId = Number(id)
-    const index = eventData.value.findIndex((event) => event.id === eventId)
-    if (index !== -1) {
-      eventData.value.splice(index, 1)
-      registrationData.value = registrationData.value.filter(
-        (registration) => registration.eventId !== eventId,
-      )
+  // 3. HTTP POST: MEMBUAT DATA ACARA BARU KE REST API
+  const createEvent = async (eventData) => {
+    loading.value = true;
+    error.value = null;
+
+    const cleanLoc = (eventData.loc || eventData.location || '').replace(/[^\w\s,.-]/g, '').trim();
+    const payload = normalizeEvent({
+      title: (eventData.title || '').trim(),
+      date: eventData.date,
+      loc: cleanLoc,
+      cat: eventData.cat || eventData.category || 'General',
+      quota: Number(eventData.quota) || 100,
+      price: eventData.price || 'Free',
+      desc: (eventData.desc || eventData.description || '').trim(),
+      done: false,
+    });
+
+    const baseUrl = getApiBaseUrl();
+
+    try {
+      // Jika endpoint sudah aktif, kirim HTTP POST
+      if (isApiConfigured(baseUrl)) {
+        const response = await fetch(`${baseUrl}/events`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Gagal menyimpan acara ke server (Status HTTP: ${response.status})`);
+        }
+
+        const createdEvent = normalizeEvent(await response.json());
+        events.value.unshift(createdEvent);
+        return createdEvent;
+      } else {
+        // Simulasi jika belum terhubung MockAPI
+        const localCreated = { ...payload, id: String(Date.now()) };
+        events.value.unshift(localCreated);
+        return localCreated;
+      }
+    } catch (err) {
+      error.value = err.message || 'Gagal menyimpan data ke server API.';
+      throw err;
+    } finally {
+      loading.value = false;
     }
-  }
+  };
 
+  // 4. HTTP DELETE: MENGHAPUS ACARA DARI SERVER & MEMBERSIHKAN TIKET TERKAIT
+  const deleteEvent = async (id) => {
+    const strId = String(id);
+    loading.value = true;
+    error.value = null;
+
+    const baseUrl = getApiBaseUrl();
+
+    try {
+      if (isApiConfigured(baseUrl)) {
+        const response = await fetch(`${baseUrl}/events/${strId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok && response.status !== 404) {
+          throw new Error(`Gagal menghapus acara dari server (Status HTTP: ${response.status})`);
+        }
+      }
+
+      // Hapus data dari state lokal
+      events.value = events.value.filter((e) => String(e.id) !== strId);
+
+      // Cascading cleanup untuk tiket pendaftaran
+      userRegistrations.value = userRegistrations.value.filter(
+        (r) => String(r.eventId) !== strId,
+      );
+    } catch (err) {
+      error.value = err.message || 'Gagal menghapus acara dari server';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 5. MUTASI STATE: TANDAI ACARA SELESAI
+  const completeEvent = async (id) => {
+    const strId = String(id);
+    const target = events.value.find((e) => String(e.id) === strId);
+    const baseUrl = getApiBaseUrl();
+
+    if (isApiConfigured(baseUrl)) {
+      const response = await fetch(`${baseUrl}/events/${strId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gagal memperbarui status acara (Status HTTP: ${response.status})`);
+      }
+    }
+
+    if (target) Object.assign(target, normalizeEvent({ ...target, done: true }));
+  };
+
+  // 6. PENCARIAN DATA SINKRON DARI STATE
+  const getEventById = (id) => {
+    return events.value.find((e) => String(e.id) === String(id));
+  };
+
+  // 7. PENDAFTARAN PESERTA
   const registerAttendee = (eventId, participantData) => {
-    const event = events.value.find((item) => item.id === Number(eventId))
-    if (!event) return null
+    const strId = String(eventId);
+    const event = events.value.find((e) => String(e.id) === strId);
+    if (!event || event.quota <= 0) return null;
 
-    const newRegistration = {
+    const bookingCode = 'GTH-' + Date.now().toString().slice(-4);
+    const regRecord = {
       id: Date.now(),
-      bookingCode: `EVT-${Date.now().toString().slice(-4)}`,
-      eventId: Number(eventId),
+      eventId: strId,
       eventTitle: event.title,
+      eventCat: event.cat,
       eventDate: event.date,
-      venue: event.location,
-      ticket: participantData.ticket,
-      quantity: Number(participantData.quantity) || 1,
-      fullName: participantData.fullName?.trim(),
-      email: participantData.email?.trim(),
-      phone: participantData.phone?.trim(),
-      dob: participantData.dob,
+      eventLoc: event.loc,
+      bookingCode,
+      registeredAt: new Date().toISOString(),
       date: new Date().toISOString(),
-      reason: participantData.reason?.trim(),
-    }
+      fullName: participantData.fullName.trim(),
+      email: participantData.email.trim(),
+      phone: participantData.phone.trim(),
+      dob: participantData.dob,
+      reason: participantData.reason.trim(),
+    };
 
-    event.quota = Math.max(0, (Number(event.quota) || 0) - 1)
-    event.registrationCount = (Number(event.registrationCount) || 0) + 1
-    registrationData.value.unshift(newRegistration)
+    // Kurangi kuota event secara reaktif
+    event.quota = Math.max(0, event.quota - 1);
 
-    return newRegistration
-  }
+    // Simpan pendaftaran ke riwayat registrasi pengguna
+    userRegistrations.value.unshift(regRecord);
 
-  const hasRegistration = (eventId) => {
-    const hasRegistered = registrationData.value.some(
-      (registration) => registration.eventId === Number(eventId),
-    )
-    if (!hasRegistered) return false
+    return regRecord;
+  };
 
-    const event = events.value.find((item) => item.id === Number(eventId))
-    return event ? !event.done && !['completed', 'done'].includes(event.status) : false
-  }
+  // 8. HELPER CEK STATUS PENDAFTARAN
+  const isUserRegistered = (eventId) => {
+    const strId = String(eventId);
+    const eventExists = events.value.some((e) => String(e.id) === strId);
+    if (!eventExists) return false;
+    return userRegistrations.value.some((r) => String(r.eventId) === strId);
+  };
 
-  const getRegistrationsByEventId = (eventId) =>
-    registrationData.value.filter(
-      (registration) => registration.eventId === Number(eventId),
-    )
+  // 9. MENGAMBIL DATA TIKET BERDASARKAN EVENT ID
+  const getRegistrationByEventId = (eventId) => {
+    return userRegistrations.value.filter((r) => String(r.eventId) === String(eventId));
+  };
 
+  const getRegistrationsByEventId = getRegistrationByEventId;
+
+  // 10. PEMBATALAN PENDAFTARAN
   const cancelRegistration = (registrationId) => {
-    const index = registrationData.value.findIndex(
-      (registration) => registration.id === Number(registrationId),
-    )
-    if (index === -1) return false
-
-    const [registration] = registrationData.value.splice(index, 1)
-    const event = eventData.value.find((item) => item.id === registration.eventId)
-    if (event) {
-      event.quota = (Number(event.quota) || 0) + 1
-      event.registrationCount = Math.max(0, (Number(event.registrationCount) || 0) - 1)
+    const strId = String(registrationId);
+    let regIdx = userRegistrations.value.findIndex((r) => String(r.id) === strId);
+    if (regIdx === -1) {
+      regIdx = userRegistrations.value.findIndex((r) => String(r.eventId) === strId);
     }
 
-    return true
-  }
+    if (regIdx !== -1) {
+      const [registration] = userRegistrations.value.splice(regIdx, 1);
 
+      const event = events.value.find((e) => String(e.id) === String(registration.eventId));
+      if (event) {
+        event.quota += 1;
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // 11. RESET DATA PENGUJIAN PRAKTIKUM
   const clearAllEvents = () => {
-    eventData.value = []
-    localStorage.removeItem(EVENTS_STORAGE_KEY)
-  }
+    events.value = [];
+    localStorage.removeItem(EVENTS_STORAGE_KEY);
+  };
 
   const clearAllRegistrations = () => {
-    registrationData.value = []
-    localStorage.removeItem(REGISTRATIONS_STORAGE_KEY)
-  }
+    userRegistrations.value = [];
+    localStorage.removeItem(REGISTRATIONS_STORAGE_KEY);
+  };
 
   return {
     events,
-    deletedEvents,
+    eventStats,
+    loading,
+    error,
+    totalEvents,
     activeEvents,
     completedEvents,
+    userRegistrations,
     totalRegistrations,
-    eventStats,
+    fetchEvents,
+    fetchEventById,
     createEvent,
-    completeEvent,
-    addEvent,
-    updateEvent,
     deleteEvent,
-    permanentDelete,
+    completeEvent,
+    getEventById,
     registerAttendee,
-    hasRegistration,
+    isUserRegistered,
+    getRegistrationByEventId,
     getRegistrationsByEventId,
     cancelRegistration,
     clearAllEvents,
-    clearRegistrations: clearAllRegistrations,
     clearAllRegistrations,
-  }
+  };
 }
+
+export const useEvent = useEvents;

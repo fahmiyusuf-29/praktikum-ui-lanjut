@@ -1,79 +1,89 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useEvent } from '@/Composable/UseEvent'
-import AppCard from '@/components/UI/AppCard.vue'
-import AppButton from '@/components/UI/AppButton.vue'
-import AppModal from '@/components/UI/Appmodal.vue'
-import OrganizerEventCard from '@/components/Event/OrganizerEventCard.vue'
-import EventCreateForm from '@/components/Event/EventCreateForm.vue'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useEvents } from '@/Composable/UseEvent';
+import AppModal from '@/components/UI/Appmodal.vue';
+import AppButton from '@/components/UI/AppButton.vue';
+import OrganizerEventCard from '@/components/Event/OrganizerEventCard.vue';
+import EventCreateForm from '@/components/Event/EventCreateForm.vue';
 
-const router = useRouter()
+const router = useRouter();
 const {
-  events,
   activeEvents,
   completedEvents,
-  deletedEvents,
-  addEvent,
+  createEvent,
   completeEvent,
   deleteEvent,
-  updateEvent,
-  permanentDelete,
-} = useEvent()
+  fetchEvents,
+  loading,
+  error,
+} = useEvents();
 
-const currentTab = ref('active')
-const isModalOpen = ref(false)
-const modalAction = ref('complete')
-const selectedEvent = ref(null)
-const successMessage = ref('')
+// KONDISI TAB AKTIF: 'active' | 'create' | 'completed'
+const currentTab = ref('active');
+
+// MODAL STATE FOR ACTIONS (Complete & Delete)
+const isModalOpen = ref(false);
+const modalAction = ref('complete'); // 'complete' | 'delete'
+const selectedEvent = ref(null);
+const isProcessingAction = ref(false);
+
+const createFormRef = ref(null);
+const isSubmitting = ref(false);
+
+// Ambil data event dari server saat halaman manajemen dibuka
+onMounted(() => {
+  fetchEvents();
+});
 
 const handleOpenCompleteModal = (event) => {
-  selectedEvent.value = event
-  modalAction.value = 'complete'
-  isModalOpen.value = true
-}
+  selectedEvent.value = event;
+  modalAction.value = 'complete';
+  isModalOpen.value = true;
+};
 
 const handleOpenDeleteModal = (event) => {
-  selectedEvent.value = event
-  modalAction.value = 'delete'
-  isModalOpen.value = true
-}
+  selectedEvent.value = event;
+  modalAction.value = 'delete';
+  isModalOpen.value = true;
+};
 
-const handleConfirmModal = () => {
-  if (!selectedEvent.value) return
-
-  if (modalAction.value === 'complete') {
-    completeEvent(selectedEvent.value.id)
-  } else {
-    deleteEvent(selectedEvent.value.id)
+const handleConfirmModal = async () => {
+  if (!selectedEvent.value) return;
+  isProcessingAction.value = true;
+  try {
+    if (modalAction.value === 'complete') {
+      await completeEvent(selectedEvent.value.id);
+    } else if (modalAction.value === 'delete') {
+      await deleteEvent(selectedEvent.value.id);
+    }
+  } finally {
+    isProcessingAction.value = false;
+    isModalOpen.value = false;
+    selectedEvent.value = null;
   }
-
-  isModalOpen.value = false
-  selectedEvent.value = null
-}
+};
 
 const handleCancelModal = () => {
-  isModalOpen.value = false
-  selectedEvent.value = null
-}
+  isModalOpen.value = false;
+  selectedEvent.value = null;
+};
 
-const handleCreateEvent = (eventData) => {
-  addEvent(eventData)
-  successMessage.value = 'Event published successfully and is now live!'
-  currentTab.value = 'active'
-
-  window.setTimeout(() => {
-    successMessage.value = ''
-  }, 4000)
-}
-
-const handleRestoreEvent = (event) => {
-  updateEvent(event.id, { deleted: false, status: 'active' })
-}
-
-const handlePermanentDelete = (event) => {
-  permanentDelete(event.id)
-}
+// HANDLER EVENT DIBUAT DARI EventCreateForm SECARA ASINKRON (POST KE REST API)
+const handleCreateEvent = async (eventData) => {
+  isSubmitting.value = true;
+  try {
+    await createEvent(eventData);
+    if (createFormRef.value) {
+      createFormRef.value.resetForm();
+    }
+    currentTab.value = 'active';
+  } catch (err) {
+    alert(error.value || 'Gagal menyimpan acara ke server REST API');
+  } finally {
+    isSubmitting.value = false;
+  }
+};
 </script>
 
 <template>
@@ -81,90 +91,82 @@ const handlePermanentDelete = (event) => {
     <div class="page-header">
       <div>
         <h2>Event Management Control</h2>
-        <p class="subtitle">
-          Monitor event lifecycle, publish new events, and archive completed ones.
-        </p>
+        <p class="subtitle">Manage event lifecycle, publish new events, and archive completed ones.</p>
       </div>
-      <AppButton variant="primary" @click="currentTab = 'create'">+ Create New Event</AppButton>
+      <AppButton variant="primary" @click="currentTab = 'create'">
+        + Create New Event
+      </AppButton>
     </div>
 
+    <!-- TAB NAVIGATION SYSTEM -->
     <div class="tabs-container">
       <button
-        class="tab-btn"
-        :class="{ 'tab-active': currentTab === 'active' }"
+        :class="['tab-btn', { active: currentTab === 'active' }]"
         @click="currentTab = 'active'"
       >
         🟢 Active Events ({{ activeEvents.length }})
       </button>
       <button
-        class="tab-btn"
-        :class="{ 'tab-active': currentTab === 'create' }"
+        :class="['tab-btn', { active: currentTab === 'create' }]"
         @click="currentTab = 'create'"
       >
         + Create Event
       </button>
       <button
-        class="tab-btn"
-        :class="{ 'tab-active': currentTab === 'completed' }"
+        :class="['tab-btn', { active: currentTab === 'completed' }]"
         @click="currentTab = 'completed'"
       >
         ✅ Completed Events ({{ completedEvents.length }})
       </button>
-      <button
-        class="tab-btn"
-        :class="{ 'tab-active': currentTab === 'deleted' }"
-        @click="currentTab = 'deleted'"
-      >
-        Deleted Events ({{ deletedEvents.length }})
-      </button>
     </div>
 
-    <div v-if="successMessage && currentTab === 'active'" class="success-message" role="status">
-      {{ successMessage }}
-    </div>
-
-    <!-- Tab 1: Active Events -->
+    <!-- TAB 1: ACTIVE EVENTS LIST -->
     <section v-if="currentTab === 'active'" class="tab-pane">
       <div v-if="activeEvents.length" class="events-grid">
         <OrganizerEventCard
-          v-for="event in activeEvents"
-          :key="event.id"
-          :event="event"
-          @view-detail="(eventId) => router.push(`/browse/events/${eventId}`)"
+          v-for="item in activeEvents"
+          :key="item.id"
+          :event="item"
+          @view-detail="(id) => router.push(`/browse/events/${id}`)"
           @complete="handleOpenCompleteModal"
           @delete="handleOpenDeleteModal"
         />
       </div>
+
+      <!-- EMPTY STATE ACTIVE -->
       <div v-else class="empty-state">
         <div class="empty-icon">📅</div>
         <h3>No Active Events</h3>
-        <p>
-          All events have ended or none have been created yet. Please create a new event.
-        </p>
-        <AppButton variant="primary" @click="currentTab = 'create'">+ Create Event Now</AppButton>
+        <p>All events have ended or none have been created yet. Please create a new event.</p>
+        <AppButton variant="primary" @click="currentTab = 'create'">
+          Create Event Now
+        </AppButton>
       </div>
     </section>
 
-    <!-- Tab 2: Create Event Form -->
-    <section v-else-if="currentTab === 'create'" class="tab-pane form-pane">
+    <!-- TAB 2: CREATE EVENT FORM -->
+    <section v-if="currentTab === 'create'" class="tab-pane">
       <EventCreateForm
+        ref="createFormRef"
+        :submitting="isSubmitting"
         @submit="handleCreateEvent"
         @cancel="currentTab = 'active'"
       />
     </section>
 
-    <!-- Tab 3: Completed Events Archive -->
-    <section v-else-if="currentTab === 'completed'" class="tab-pane">
+    <!-- TAB 3: COMPLETED EVENTS (ARCHIVE) -->
+    <section v-if="currentTab === 'completed'" class="tab-pane">
       <div v-if="completedEvents.length" class="events-grid">
         <OrganizerEventCard
-          v-for="event in completedEvents"
-          :key="event.id"
-          :event="event"
+          v-for="item in completedEvents"
+          :key="item.id"
+          :event="item"
           is-completed
-          @view-detail="(eventId) => router.push(`/browse/events/${eventId}`)"
           @delete="handleOpenDeleteModal"
         />
       </div>
+
+      <!-- EMPTY STATE COMPLETED -->
       <div v-else class="empty-state">
         <div class="empty-icon">📦</div>
         <h3>No Completed Events</h3>
@@ -172,45 +174,18 @@ const handlePermanentDelete = (event) => {
       </div>
     </section>
 
-    <section v-else class="tab-pane">
-      <div v-if="deletedEvents.length" class="events-grid">
-        <AppCard
-          v-for="event in deletedEvents"
-          :key="event.id"
-          class="deleted-event-card"
-        >
-          <span class="deleted-category">{{ event.category }}</span>
-          <h3>{{ event.title }}</h3>
-          <p>{{ event.date }} · {{ event.location }}</p>
-          <div class="deleted-actions">
-            <button type="button" class="restore-button" @click="handleRestoreEvent(event)">
-              Restore Event
-            </button>
-            <button type="button" class="remove-button" @click="handlePermanentDelete(event)">
-              Permanently Delete
-            </button>
-          </div>
-        </AppCard>
-      </div>
-      <div v-else class="empty-state">
-        <div class="empty-icon">🗑️</div>
-        <h3>No Deleted Events</h3>
-        <p>Events you delete will be listed here.</p>
-      </div>
-    </section>
-
-    <!-- Modal confirmation for completing or deleting an event -->
+    <!-- MODAL KONFIRMASI DENGAN BACKDROP BLUR (Reused for Complete & Delete) -->
     <AppModal
       :is-open="isModalOpen"
-      :title="modalAction === 'complete' ? 'Complete Event?' : 'Delete Event?'"
+      :title="modalAction === 'complete' ? 'Complete Event?' : 'Delete Event Permanently?'"
       :message="
         modalAction === 'complete'
-          ? `Are you sure you want to mark ${selectedEvent?.title} as complete? Once completed, the status is final and the event will be moved to the archived records.`
-          : `Are you sure you want to delete ${selectedEvent?.title}? This action moves the event to deleted events.`
+          ? `Are you sure you want to mark '${selectedEvent?.title}' as completed? Once completed, the status is final and the event will be automatically removed from public listings.`
+          : `Are you sure you want to permanently delete '${selectedEvent?.title}'? This action cannot be undone and will permanently remove this event from all records.`
       "
-      :confirm-text="modalAction === 'complete' ? 'Yes, Complete' : 'Yes, Delete'"
-      badge-text="Warning"
-      badge-variant="warning"
+      :confirm-text="modalAction === 'complete' ? 'Yes, Complete' : 'Yes, Delete Permanently'"
+      cancel-text="Cancel"
+      :confirm-loading="isProcessingAction"
       @confirm="handleConfirmModal"
       @close="handleCancelModal"
     />
@@ -227,9 +202,9 @@ const handlePermanentDelete = (event) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-4);
   margin-bottom: var(--space-8);
   flex-wrap: wrap;
+  gap: var(--space-4);
 }
 
 .page-header h2 {
@@ -245,23 +220,21 @@ const handlePermanentDelete = (event) => {
 
 .tabs-container {
   display: flex;
-  gap: var(--space-2);
-  overflow-x: auto;
-  border-bottom: 1px solid var(--border-color);
+  gap: var(--space-3);
+  border-bottom: 2px solid var(--border-color);
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-2);
 }
 
 .tab-btn {
-  flex: 0 0 auto;
   background: none;
   border: none;
-  padding: var(--space-3) var(--space-4);
-  font-size: 0.95rem;
+  padding: var(--space-3) var(--space-6);
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  border-bottom: 3px solid transparent;
+  border-radius: 8px;
   transition: all 0.2s;
 }
 
@@ -270,36 +243,17 @@ const handlePermanentDelete = (event) => {
   color: var(--primary);
 }
 
-.tab-btn.tab-active {
-  border-bottom-color: var(--primary);
-  color: var(--primary);
-  background-color: var(--bg-light);
+.tab-btn.active {
+  background-color: var(--primary);
+  color: white;
 }
 
-.tab-pane {
-  min-height: 300px;
-}
-
-.form-pane {
-  display: flex;
-  justify-content: center;
-}
-
-.success-message {
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-4);
-  border: 1px solid #badbcc;
-  border-radius: 6px;
-  background: #d1e7dd;
-  color: #0f5132;
-  font-weight: 600;
-}
-
+/* ORGANIZER EVENT CARDS GRID */
 .events-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-6);
-  margin-top: var(--space-2);
+  margin-bottom: var(--space-12);
 }
 
 .empty-state {
@@ -308,6 +262,7 @@ const handlePermanentDelete = (event) => {
   background: white;
   border: 1px dashed var(--border-color);
   border-radius: var(--space-4);
+  margin-bottom: var(--space-12);
 }
 
 .empty-icon {
@@ -316,7 +271,7 @@ const handlePermanentDelete = (event) => {
 }
 
 .empty-state h3 {
-  color: var(--text-main);
+  font-size: 1.4rem;
   margin-bottom: var(--space-2);
 }
 
@@ -325,78 +280,10 @@ const handlePermanentDelete = (event) => {
   margin-bottom: var(--space-6);
 }
 
-.deleted-event-card {
-  padding: var(--space-6);
-}
-
-.deleted-category {
-  display: inline-block;
-  color: var(--primary);
-  background: rgba(102, 68, 255, 0.1);
-  padding: 4px 10px;
-  border-radius: 50px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.deleted-event-card h3 {
-  color: var(--text-main);
-  margin: var(--space-3) 0;
-}
-
-.deleted-event-card p {
-  color: var(--text-muted);
-}
-
-.deleted-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-color);
-}
-
-.restore-button,
-.remove-button {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.restore-button {
-  color: #27ae60;
-  border-color: #27ae60;
-}
-
-.restore-button:hover {
-  color: white;
-  background: #27ae60;
-}
-
-.remove-button {
-  color: #dc3545;
-  border-color: #dc3545;
-}
-
-.remove-button:hover {
-  color: white;
-  background: #dc3545;
-}
-
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .empty-state {
-    padding: var(--space-8) var(--space-4);
   }
 }
 </style>
