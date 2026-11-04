@@ -22,7 +22,7 @@ import Breadcrumb from '@/components/app/Breadcrumb.vue'
 .main-content {
   flex: 1;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 1rem;
   max-width: 1440px;
   margin: 0 auto;

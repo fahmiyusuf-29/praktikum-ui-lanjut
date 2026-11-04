@@ -1,11 +1,16 @@
 <script setup>
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEvent } from '@/Composable/UseEvent'
 import AppCard from '@/components/UI/AppCard.vue'
 import AppButton from '@/components/UI/AppButton.vue'
 
 const router = useRouter()
-const { events, eventStats } = useEvent()
+const { events, eventStats, fetchEvents } = useEvent()
+
+onMounted(() => {
+  fetchEvents()
+})
 </script>
 
 <template>
